@@ -19,7 +19,7 @@ const Register = () =>{
                 password:password,
                 confirmPassword:confirmPassword
             });
-            history('/');
+            history('/dashboard');
         }catch(err:any){
             if(err.response){
                 setMsg(err.response.data.msg);
