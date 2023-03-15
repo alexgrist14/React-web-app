@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 export const getUsers = async (req,res)=>{
     try {
         const users = await Users.findAll({
-            attributes: ['id', 'name', 'email']
+            attributes: ['id', 'name', 'email','createdAt','updatedAt','isBlocked']
         });
         res.json(users);
     }catch(err){
@@ -22,7 +22,8 @@ export const Register = async (req,res) =>{
         await Users.create({
             name:name,
             email:email,
-            password:hashPassword
+            password:hashPassword,
+            isBlocked: false,
         });
         res.json({msg: "Registration Successful"});
     }catch (err){
@@ -80,4 +81,49 @@ export const Logout = async (req,res) =>{
     });
     res.clearCookie('refreshToken');
     return res.sendStatus(200);
+}
+
+export const Delete = async (req)=>{
+    const users = req.body.id;
+    try {
+        users.map(async (id) => {
+            await Users.destroy({
+                where: {
+                    id: id
+                }
+            })
+        })
+    }catch (err){
+        console.log(err);
+    }
+}
+
+export const Block = async (req)=>{
+    const users = req.body.id;
+    try{
+        users.map(async (id)=>{
+            await Users.update({isBlocked: true},{
+                where:{
+                    id: id
+                }
+            })
+        })
+    }catch (err){
+        console.log(err);
+    }
+}
+
+export const Unblock = async (req)=>{
+    const users = req.body.id;
+    try{
+        users.map(async (id)=>{
+            await Users.update({isBlocked: false},{
+                where:{
+                    id: id
+                }
+            })
+        })
+    }catch (err){
+        console.log(err);
+    }
 }
