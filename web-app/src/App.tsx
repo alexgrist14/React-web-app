@@ -1,11 +1,11 @@
-import React from 'react';
+import React, {ReactElement} from 'react';
 import { BrowserRouter, Route,Routes} from "react-router-dom";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Navbar from "./components/Navbar";
 import Dashboard from "./components/Dashboard";
 
-function App() {
+function App():ReactElement {
     return (
     <BrowserRouter>
         <Navbar/>

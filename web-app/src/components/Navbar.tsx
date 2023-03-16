@@ -1,11 +1,11 @@
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
-import React from "react";
+import React, {ReactElement} from "react";
 
-const Navbar = () => {
+const Navbar = ():ReactElement => {
     const history = useNavigate();
-    let isDashBoard = window.location.pathname === '/dashboard';
-    let isRegisterPage = window.location.pathname === '/register';
+    let isDashBoard:boolean = window.location.pathname === '/dashboard';
+    let isRegisterPage:boolean = window.location.pathname === '/register';
 
 
     const Logout = async () => {
@@ -28,7 +28,7 @@ const Navbar = () => {
                         <div className='navbar-item'>
                             <div className='buttons'>
                                 {
-                                    isRegisterPage ? '' :
+                                    isRegisterPage || isDashBoard ? '' :
                                         <button onClick={toRegisterPage} className='button is-light'>
                                             Sing up
                                         </button>

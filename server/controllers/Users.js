@@ -40,6 +40,7 @@ export const Login = async (req,res)=>{
         });
         const match = await bcrypt.compare(req.body.password,user[0].password);
         if(!match) return res.status(400).json({msg: "Wrong password"});
+        if(user[0].isBlocked) return res.status(400).json({msg: "You are banned"});
         const userId = user[0].id;
         const name = user[0].name;
         const email = user[0].email;
@@ -83,7 +84,7 @@ export const Logout = async (req,res) =>{
     return res.sendStatus(200);
 }
 
-export const Delete = async (req)=>{
+export const Delete = async (req,res)=>{
     const users = req.body.id;
     try {
         users.map(async (id) => {
@@ -93,12 +94,13 @@ export const Delete = async (req)=>{
                 }
             })
         })
+        return res.sendStatus(200);
     }catch (err){
         console.log(err);
     }
 }
 
-export const Block = async (req)=>{
+export const Block = async (req,res)=>{
     const users = req.body.id;
     try{
         users.map(async (id)=>{
@@ -108,12 +110,13 @@ export const Block = async (req)=>{
                 }
             })
         })
+        return res.sendStatus(200);
     }catch (err){
         console.log(err);
     }
 }
 
-export const Unblock = async (req)=>{
+export const Unblock = async (req,res)=>{
     const users = req.body.id;
     try{
         users.map(async (id)=>{
@@ -123,6 +126,7 @@ export const Unblock = async (req)=>{
                 }
             })
         })
+        return res.sendStatus(200);
     }catch (err){
         console.log(err);
     }

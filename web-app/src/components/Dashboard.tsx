@@ -1,31 +1,41 @@
-import React, {useEffect, useState} from "react";
+import React, {ReactElement, useEffect, useState} from "react";
 import axios from 'axios';
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import jwt_decode from 'jwt-decode';
+import banIcon from '../assets/banned.png';
+import deleteIcon from '../assets/delete.png';
+import usersApi from "../api/userApi";
 
-const Dashboard = () =>{
-    const [name,setName] = useState('');
-    const [token,setToken] =useState('');
-    const [expire,setExpire] =useState('');
-    const [users,setUsers] = useState([]);
-    const [isUsersSelected,setIsUsersSelected] = useState(false);
-    const [selectedUsers,setSelectedUsers] = useState<number[]>([]);
+interface DecodedToken {
+    userId: string,
+    name: string,
+    exp: string,
+}
+
+const Dashboard = (): ReactElement => {
+    const [name, setName] = useState('');
+    const [sessionUserId, setSessionUserId] = useState('');
+    const [token, setToken] = useState('');
+    const [expire, setExpire] = useState('');
+    const [users, setUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const history = useNavigate();
 
-    useEffect(()=>{
+    useEffect(() => {
         refreshToken();
         getUsers();
-    },[]);
+    }, []);
 
-    const refreshToken = async () =>{
-        try{
-            const response:any = await axios.get('http://localhost:5000/token');
+    const refreshToken = async () => {
+        try {
+            const response: any = await axios.get('http://localhost:5000/token');
             setToken(response.data.accessToken);
-            const decoded:any = jwt_decode(response.data.accessToken);
+            const decoded: DecodedToken = jwt_decode(response.data.accessToken);
+            setSessionUserId(decoded.userId);
             setName(decoded.name);
             setExpire(decoded.exp);
-        }catch (error:any){
-            if(error.response){
+        } catch (error: any) {
+            if (error.response) {
                 history('/');
             }
         }
@@ -33,94 +43,89 @@ const Dashboard = () =>{
 
     const axiosJWT = axios.create();
 
-    axiosJWT.interceptors.request.use(async (config)=>{
+    axiosJWT.interceptors.request.use(async (config) => {
         const currentDate = new Date();
-        // @ts-ignore
-        if(expire * 1000 < currentDate.getTime()){
-        const response = await axios.get('http://localhost:5000/token');
-        config.headers.Authorization = `Bearer ${response.data.accessToken}`;
-        setToken(response.data.accessToken);
-        const decoded:any =jwt_decode(response.data.accessToken);
-        setName(decoded.name);
-        setExpire(decoded.exp);
+
+        if (+expire * 1000 < currentDate.getTime()) {
+            const response = await axios.get('http://localhost:5000/token');
+            config.headers.Authorization = `Bearer ${response.data.accessToken}`;
+            setToken(response.data.accessToken);
+            const decoded: DecodedToken = jwt_decode(response.data.accessToken);
+            setSessionUserId(decoded.userId);
+            setName(decoded.name);
+            setExpire(decoded.exp);
         }
+
         return config;
-    },(error) =>{
+    }, (error) => {
         return Promise.reject(error);
     });
-    const getUsers = async ()=>{
-        const response = await axiosJWT.get('http://localhost:5000/users',{
+    const getUsers = async () => {
+        const response = await axiosJWT.get('http://localhost:5000/users', {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
         setUsers(response.data);
     }
-    const deleteUsers = async (e:React.MouseEvent<HTMLButtonElement, MouseEvent>)=>{
-        e.preventDefault();
-        try{
-            await axios.post('http://localhost:5000/delete',{
-                id: selectedUsers
-            })
-            await window.location.reload();
-        }catch(err:any){
-            console.log(err);
-        }
+    const deleteUsers = async () => {
+        await usersApi.deleteUsers(selectedUsers);
+        window.location.reload();
+
     }
-    const blockUsers = async (e:React.MouseEvent<HTMLButtonElement, MouseEvent>)=>{
-        e.preventDefault();
-        try{
-            await axios.post('http://localhost:5000/block',{
-                id: selectedUsers
-            });
-            window.location.reload();
-        }catch(err:any){
-            console.log(err);
+
+    const blockUsers = async () => {
+        await usersApi.blockUsers(selectedUsers, sessionUserId)
+        if(selectedUsers.includes(Number(sessionUserId))){
+            history('/');
         }
+        window.location.reload();
     }
-    const unblockUsers = async (e:React.MouseEvent<HTMLButtonElement, MouseEvent>)=>{
-        e.preventDefault();
-        try{
-            await axios.post('http://localhost:5000/unblock',{
-                id: selectedUsers
-            })
-            window.location.reload();
-        }catch(err:any){
-            console.log(err);
-        }
+
+    const unblockUsers = async () => {
+        await usersApi.unblockUsers(selectedUsers);
+        window.location.reload();
     }
-    const formatDate = (dateToFormat: Date)=>{
+
+    const formatDate = (dateToFormat: Date) => {
         const date = new Date(dateToFormat);
         const year = date.getFullYear();
         const month = date.getMonth() < 10 ? `0${date.getMonth()}` : date.getMonth();
-        const day = date.getDate() < 10 ?`0${date.getDate()}` : date.getDate();
-        const hours = date.getHours() < 10 ?`0${date.getHours()}` : date.getHours();
-        const minutes = date.getMinutes() < 10 ?`0${date.getMinutes()}` : date.getMinutes();
+        const day = date.getDate() < 10 ? `0${date.getDate()}` : date.getDate();
+        const hours = date.getHours() < 10 ? `0${date.getHours()}` : date.getHours();
+        const minutes = date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
 
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
 
-    const selectAllUsers = ()=>{
-        setIsUsersSelected(!isUsersSelected);
-    }
-    const addSelectedUsersToList = (event:React.ChangeEvent<HTMLInputElement>,index:number):void=>{
-        if(event.target.checked){
-            setSelectedUsers(prevState => [...prevState,index]);
+    const selectAllUsers = () => {
+        const ids = users.map(({id}) => id);
+        if (ids.some((id) => !selectedUsers.includes(id))) {
+            setSelectedUsers(ids);
+        } else {
+            setSelectedUsers([]);
         }
-        else {
-            setSelectedUsers(prevState => prevState.filter(i =>i !== index));
+    }
+
+    const addSelectedUsersToList = (event: React.ChangeEvent<HTMLInputElement>, index: number): void => {
+        if (event.target.checked) {
+            setSelectedUsers(prevState => [...prevState, index]);
+        } else {
+            setSelectedUsers(prevState => prevState.filter(i => i !== index));
         }
     }
     return (
         <div className='container mt-5'>
             <h1>Welcome Back: {name}</h1>
-            <button onClick={deleteUsers}>Delete</button>
-            <button onClick={blockUsers}>Block</button>
-            <button onClick={unblockUsers}>Unblock</button>
+            <button onClick={blockUsers} className='button'>Block</button>
+            <button onClick={unblockUsers} className='button'><img src={banIcon} alt="unban button"/></button>
+            <button onClick={deleteUsers} className='button'><img src={deleteIcon} alt="delete button"/></button>
             <table className='table is-striped is-fullwidth'>
                 <thead>
                 <tr>
-                    <th><input onChange={() =>setIsUsersSelected(!isUsersSelected)} type='checkbox' className='checkbox'/>Select all</th>
+                    <th><input onChange={selectAllUsers} type='checkbox'
+                               className='checkbox'/> Select all
+                    </th>
                     <th>No</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -130,11 +135,11 @@ const Dashboard = () =>{
                 </tr>
                 </thead>
                 <tbody>
-                {users.map((user:any) =>(
-                    <tr key = {user.id}>
+                {users.map((user: any) => (
+                    <tr key={user.id}>
                         <td><input type='checkbox'
-                                   onChange={(e) =>addSelectedUsersToList(e,user.id)}
-
+                                   onChange={(e) => addSelectedUsersToList(e, user.id)}
+                                   checked={selectedUsers.includes(user.id)}
                                    className='user-checkbox'/>
                         </td>
                         <td>{user.id}</td>
@@ -142,7 +147,7 @@ const Dashboard = () =>{
                         <td>{user.email}</td>
                         <td>{formatDate(user.createdAt)}</td>
                         <td>{formatDate(user.updatedAt)}</td>
-                        <td className='is-warning'>{user.isBlocked.toString()}</td>
+                        <td className={user.isBlocked.toString() === 'true' ? 'is-danger' : 'is-primary'}>{user.isBlocked.toString()}</td>
                     </tr>
                 ))}
                 </tbody>

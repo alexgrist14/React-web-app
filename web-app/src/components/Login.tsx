@@ -1,14 +1,14 @@
-import {useState} from "react";
+import React, {ReactElement, useState} from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
-const Login = () =>{
+const Login = ():ReactElement =>{
     const [email,setEmail] = useState('');
     const [password,setPassword] = useState('');
     const [msg,setMsg] =useState('');
     const history = useNavigate();
 
-    const Auth = async (e:any) =>{
+    const Auth = async (e:React.MouseEvent<HTMLFormElement, MouseEvent>) =>{
         e.preventDefault();
         try{
             await axios.post('http://localhost:5000/login',{

@@ -1,4 +1,4 @@
-import {useState} from "react";
+import React, {useState} from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
@@ -10,7 +10,7 @@ const Register = () =>{
     const [msg,setMsg] =useState('');
     const history = useNavigate();
 
-    const Register = async (e:any) =>{
+    const Register = async (e:React.MouseEvent<HTMLFormElement, MouseEvent>) =>{
         e.preventDefault();
         try{
             await axios.post('http://localhost:5000/users',{
