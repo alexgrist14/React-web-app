@@ -77,6 +77,7 @@ const Dashboard = (): ReactElement => {
     const blockUsers = async () => {
         await usersApi.blockUsers(selectedUsers, sessionUserId)
         if(selectedUsers.includes(Number(sessionUserId))){
+            await usersApi.logout();
             history('/');
         }
         window.location.reload();
